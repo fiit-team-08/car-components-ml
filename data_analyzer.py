@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
+from similaritymeasures import area_between_two_curves, curve_length_measure, frechet_dist
 
 def init_dataframe(path):
     df = pd.read_csv(path, header=None, sep=';')
@@ -24,12 +26,29 @@ df4.plot(x='LAT', y='LON')
 df5.plot(x='LAT', y='LON')
 df6.plot(x='LAT', y='LON')
 df7.plot(x='LAT', y='LON')
-plt.show()
 
-# fig = plt.figure()
-# for frame in [df1, df2, df3, df4, df5, df6]:
-#     plt.plot(frame['LON'], frame['LAT'])
 # plt.show()
+
+fig = plt.figure()
+for frame in [df2, df7]:
+    plt.plot(frame['LON'], frame['LAT'])
+#plt.show()
+
+def create_curve(dataframe):
+    curve = np.zeros((dataframe.shape[0], 2))
+    curve[:, 0] = dataframe.LON / 10**6
+    curve[:, 1] = dataframe.LAT / 10**6
+    return curve
+
+experimental_curve = create_curve(df7)
+ideal_curve = create_curve(df7)
+
+fd = frechet_dist(experimental_curve, ideal_curve)
+print(fd)
+
+cl = curve_length_measure(experimental_curve, ideal_curve)
+print(cl)
+
 
 # fig = plt.figure()
 # for frame in [df, df1]:
