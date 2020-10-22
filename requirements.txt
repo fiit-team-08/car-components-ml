@@ -5,3 +5,4 @@ tensorflow
 h5py
 numpy
 pandas
+sympy
