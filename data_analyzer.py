@@ -14,6 +14,12 @@ def init_dataframe(path):
     df = pd.read_csv(path, sep=',')
     return df
 
+def create_and_save_images():
+    for fileName in listdir('data/laps'):
+        df = init_dataframe('data/laps/{}'.format(fileName))
+        df.plot(x='LAT', y='LON')
+        plt.savefig('data/laps_images/{}'.format(fileName[:-4]))
+
 # df0 = init_dataframe_old('data/feri_logy_analyza/200629_karting/200629130554_gps.log')
 # df1 = init_dataframe_old('data/feri_logy_analyza/200629_karting/kartfinal36pr3r.csv')
 # df2 = init_dataframe_old('data/200623_academy/200623110845_gps.log')
