@@ -1,52 +1,65 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
+from similaritymeasures import area_between_two_curves, curve_length_measure, frechet_dist
 
+def init_dataframe_old(path):
+    df = pd.read_csv(path, header=None, sep=';')
+    df = df.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
+    df.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
+    return df
 
-df = pd.read_csv('data/feri_logy_analyza/200629_karting/200629130554_gps.log', header=None, sep=';')
-df1 = pd.read_csv('data/feri_logy_analyza/200629_karting/kartfinal36pr3r.csv', header=None, sep=';')
-df2 = pd.read_csv('data/200623_academy/200623110845_gps.log', header=None, sep=';')
-df3 = pd.read_csv('data/200623_academy/200623111152_gps.log', header=None, sep=';')
-df4 = pd.read_csv('data/200623_academy/200623120513_gps.log', header=None, sep=';')
-df5 = pd.read_csv('data/200623_academy/200623121213_gps.log', header=None, sep=';')
-df6 = pd.read_csv('data/200623_academy/200623122206_gps.log', header=None, sep=';')
+def init_dataframe(path):
+    df = pd.read_csv(path, sep=',')
+    return df
 
-df = df.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
+df0 = init_dataframe_old('data/feri_logy_analyza/200629_karting/200629130554_gps.log')
+df1 = init_dataframe_old('data/feri_logy_analyza/200629_karting/kartfinal36pr3r.csv')
+df2 = init_dataframe_old('data/200623_academy/200623110845_gps.log')
+df3 = init_dataframe_old('data/200623_academy/200623111152_gps.log')
+df4 = init_dataframe_old('data/200623_academy/200623120513_gps.log')
+df5 = init_dataframe_old('data/200623_academy/200623121213_gps.log')
+df6 = init_dataframe_old('data/200623_academy/200623122206_gps.log')
+df7 = init_dataframe_old('data/200623_academy/trasa23.csv')
 
-df1 = df1.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df1.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
+ref1 = init_dataframe('data/ref1.csv')
+ref2 = init_dataframe('data/ref2.csv')
+traces1 = init_dataframe('data/traces1.csv')
+traces2 = init_dataframe('data/traces2.csv')
 
-df2 = df2.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df2.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
-df3 = df3.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df3.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
-df4 = df4.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df4.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
-df5 = df5.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df5.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
-df6 = df6.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df6.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
-
-# print(df.head(50))
-
-df = pd.read_csv('data/200623_academy/trasa23.csv', sep=';', header=None)
-df = df.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-df.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
-
-df.plot(x='LAT', y='LON')
-plt.show()
-
-# df2.plot(x='LAT', y='LON')
-# df3.plot(x='LAT', y='LON')
-# df4.plot(x='LAT', y='LON')
-# df5.plot(x='LAT', y='LON')
-# df6.plot(x='LAT', y='LON')
 # plt.show()
 
-# fig = plt.figure()
-# for frame in [df1, df2, df3, df4, df5, df6]:
-#     plt.plot(frame['LON'], frame['LAT'])
+df0.plot(x='LAT', y='LON')
+df1.plot(x='LAT', y='LON')
+df2.plot(x='LAT', y='LON')
+df3.plot(x='LAT', y='LON')
+df4.plot(x='LAT', y='LON')
+df5.plot(x='LAT', y='LON')
+df6.plot(x='LAT', y='LON')
+df7.plot(x='LAT', y='LON')
+
 # plt.show()
+
+fig = plt.figure()
+for frame in [df2, df7]:
+    plt.plot(frame['LON'], frame['LAT'])
+#plt.show()
+
+def create_curve(dataframe):
+    curve = np.zeros((dataframe.shape[0], 2))
+    curve[:, 0] = dataframe.LON / 10**6
+    curve[:, 1] = dataframe.LAT / 10**6
+    return curve
+
+# experimental_curve = create_curve(df7)
+# ideal_curve = create_curve(df7)
+
+# fd = frechet_dist(experimental_curve, ideal_curve)
+# print(fd)
+
+# cl = curve_length_measure(experimental_curve, ideal_curve)
+# print(cl)
+
 
 # fig = plt.figure()
 # for frame in [df, df1]:
