@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from similaritymeasures import area_between_two_curves, curve_length_measure, frechet_dist
 from os import listdir
+from shutil import copy
 
 def init_dataframe_old(path):
     df = pd.read_csv(path, header=None, sep=';')
@@ -59,36 +60,40 @@ def create_curve(dataframe):
     curve[:, 1] = dataframe.LAT
     return curve
 
-ideal_curve_ref1 = create_curve(ref1)
-ideal_curve_ref2 = create_curve(ref2)
-laps_dir = 'data/laps'
+def find_out_difference():
+    ref1 = init_dataframe('data/ref1.csv')
+    ref2 = init_dataframe('data/ref2.csv')
 
-nameColumn = 'Name'
-frechetColumn = 'Frechet distance'
-curveLenColumn = 'Curve length measure'
-data_structure = {nameColumn: [], frechetColumn: [], curveLenColumn: []}
-difference_df = pd.DataFrame(data=data_structure)
+    ideal_curve_ref1 = create_curve(ref1)
+    ideal_curve_ref2 = create_curve(ref2)
+    laps_dir = 'data/laps'
 
-for fileName in listdir(laps_dir):
-    lap = init_dataframe('{}/{}'.format(laps_dir, fileName))
-    experimental_curve = create_curve(lap)
+    nameColumn = 'Name'
+    frechetColumn = 'Frechet distance'
+    curveLenColumn = 'Curve length measure'
+    data_structure = {nameColumn: [], frechetColumn: [], curveLenColumn: []}
+    difference_df = pd.DataFrame(data=data_structure)
 
-    ideal_curve = ideal_curve_ref1 if fileName.startswith('lap1') else ideal_curve_ref2
-    fd = frechet_dist(experimental_curve, ideal_curve)
-    cl = curve_length_measure(experimental_curve, ideal_curve)    
+    for fileName in listdir(laps_dir):
+        lap = init_dataframe('{}/{}'.format(laps_dir, fileName))
+        experimental_curve = create_curve(lap)
 
-    difference_df = difference_df.append({nameColumn: fileName, frechetColumn: fd, curveLenColumn: cl}, ignore_index=True)
-    print(fileName)
+        ideal_curve = ideal_curve_ref1 if fileName.startswith('lap1') else ideal_curve_ref2
+        fd = frechet_dist(experimental_curve, ideal_curve)
+        cl = curve_length_measure(experimental_curve, ideal_curve)    
 
-difference_df.to_csv('data/differences.csv', index=False)
-plt.show()
+        difference_df = difference_df.append({nameColumn: fileName, frechetColumn: fd, curveLenColumn: cl}, ignore_index=True)
+        print(fileName)
 
-# fd = frechet_dist(experimental_curve, ideal_curve)
-# print(fd)
+    difference_df.to_csv('data/differences.csv', index=False)
 
-# cl = curve_length_measure(experimental_curve, ideal_curve)
-# print(cl)
+def init_dataframe_differences():
+    df = pd.read_csv('data/differences.csv')
+    return df
 
+# differences_df = init_dataframe_differences()
+# differences_df.plot.scatter(x='Frechet distance', y='Curve length measure')
+# plt.show()
 
 # fig = plt.figure()
 # for frame in [df, df1]:
