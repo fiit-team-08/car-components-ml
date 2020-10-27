@@ -1,14 +1,15 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from similaritymeasures import area_between_two_curves, curve_length_measure, frechet_dist
+from similaritymeasures import curve_length_measure, frechet_dist
 from os import listdir
 from shutil import copy
 
 def init_dataframe_old(path):
     df = pd.read_csv(path, header=None, sep=';')
     df = df.drop(columns=[0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
-    df.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL', 'GSPEED', 'CRS', 'HACC', 'NXPT']
+    df.columns = ['LAT', 'LON', 'UTMX', 'UTMY', 'HMSL',
+                  'GSPEED', 'CRS', 'HACC', 'NXPT']
     return df
 
 def init_dataframe(path):
@@ -68,24 +69,29 @@ def find_out_difference():
     ideal_curve_ref2 = create_curve(ref2)
     laps_dir = 'data/laps'
 
-    nameColumn = 'Name'
-    frechetColumn = 'Frechet distance'
-    curveLenColumn = 'Curve length measure'
-    data_structure = {nameColumn: [], frechetColumn: [], curveLenColumn: []}
-    difference_df = pd.DataFrame(data=data_structure)
+    name_column = 'Name'
+    frechet_column = 'Frechet distance'
+    curve_len_column = 'Curve length measure'
+    data_structure = {name_column: [], frechet_column: [], curve_len_column: []}
+    differences_df = pd.DataFrame(data=data_structure)
 
-    for fileName in listdir(laps_dir):
-        lap = init_dataframe('{}/{}'.format(laps_dir, fileName))
+    for file_name in listdir(laps_dir):
+        lap = init_dataframe('{}/{}'.format(laps_dir, file_name))
         experimental_curve = create_curve(lap)
 
-        ideal_curve = ideal_curve_ref1 if fileName.startswith('lap1') else ideal_curve_ref2
+        ideal_curve = ideal_curve_ref1 if file_name.startswith('lap1') \
+                                       else ideal_curve_ref2
         fd = frechet_dist(experimental_curve, ideal_curve)
         cl = curve_length_measure(experimental_curve, ideal_curve)    
 
-        difference_df = difference_df.append({nameColumn: fileName, frechetColumn: fd, curveLenColumn: cl}, ignore_index=True)
-        print(fileName)
+        difference = {name_column: file_name, frechet_column: fd, curve_len_column: cl}
+        differences_df = differences_df.append(difference, ignore_index=True)
+        print(file_name)
 
-    difference_df.to_csv('data/differences.csv', index=False)
+    differences_df.to_csv('data/differences.csv', index=False)
+
+# create_and_save_images()
+find_out_difference()
 
 def init_dataframe_differences():
     df = pd.read_csv('data/differences.csv')
