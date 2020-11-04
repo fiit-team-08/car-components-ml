@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from similaritymeasures import curve_length_measure, frechet_dist
 from similaritymeasures import area_between_two_curves
-from os import listdir
+from os import listdir, remove
 from shutil import copy
 
 def init_dataframe_old(path):
@@ -71,10 +71,14 @@ def find_out_difference():
     laps_dir = 'data/laps'
 
     name_column = 'Name'
+    measurement_column = 'Measurements count'
     frechet_column = 'Frechet distance'
     curve_len_column = 'Curve length measure'
     area_column = 'Area diff'
-    data_structure = {name_column: [], frechet_column: [], curve_len_column: [], area_column: []}
+    data_structure = {name_column: [], measurement_column:[],\
+                     frechet_column: [], curve_len_column: [],\
+                     area_column: []}
+
     differences_df = pd.DataFrame(data=data_structure)
 
     for file_name in listdir(laps_dir):
@@ -83,11 +87,15 @@ def find_out_difference():
 
         ideal_curve = ideal_curve_ref1 if file_name.startswith('lap1') \
                                        else ideal_curve_ref2
+        m_count = len(lap)
         fd = frechet_dist(experimental_curve, ideal_curve)
         cl = curve_length_measure(experimental_curve, ideal_curve)
         area = area_between_two_curves(experimental_curve, ideal_curve) 
 
-        difference = {name_column: file_name, frechet_column: fd, curve_len_column: cl, area_column : area}
+        difference = {name_column: file_name, measurement_column: m_count,\
+                    frechet_column: fd, curve_len_column: cl,\
+                    area_column : area}
+
         differences_df = differences_df.append(difference, ignore_index=True)
         print(file_name)
 
