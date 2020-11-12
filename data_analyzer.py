@@ -59,6 +59,17 @@ ref2 = init_dataframe('data/ref2.csv')
 #     plt.plot(frame['LON'], frame['LAT'])
 #plt.show()
 
+def create_images_with_refference_lap():
+    for fileName in listdir('data/laps'):
+        df = init_dataframe('data/laps/{}'.format(fileName))
+        ref = ref1 if fileName.startswith('lap1') else ref2
+        _ = plt.figure()
+        for frame in [df, ref]:
+            plt.plot(frame['LON'], frame['LAT'])
+        plt.savefig('data/laps_images_with_ref_lap/{}'.format(fileName[:-4]))
+        plt.close()
+# create_images_with_refference_lap()
+
 def create_curve(dataframe):
     curve = np.zeros((dataframe.shape[0], 2))
     curve[:, 0] = dataframe.LON
