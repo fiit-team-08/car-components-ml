@@ -1,6 +1,7 @@
 import pandas as pd
 import math 
 import numpy as np
+from numpy.linalg import norm
 from scipy import stats
 from obspy.geodetics import degrees2kilometers
 import matplotlib.pyplot as plt
@@ -8,6 +9,8 @@ from similaritymeasures import curve_length_measure, frechet_dist
 from similaritymeasures import area_between_two_curves
 from os import listdir, remove
 from shutil import copy
+from time import time_ns
+import threading as thread
 
 def init_dataframe_old(path):
     df = pd.read_csv(path, header=None, sep=';')
@@ -166,28 +169,31 @@ def find_angle_between_vectors(vector_A, vector_B):
 def create_vector(point_A, point_B):
     return [point_B.LAT - point_A.LAT, point_B.LON - point_A.LON]
 
-def shortest_distance(x1, y1, a, b, c):  
-    perpendicular = abs((a * x1 + b * y1 + c)) / (math.sqrt(a ** 2 + b ** 2)) 
-    return perpendicular
+# Perdendicular from p1 to line (p2,p3)
+def shortest_distance(p1,p2,p3):  
+    dist = norm(np.cross(p2-p3, p3-p1))/norm(p3-p2)
+    return dist
 
-def find_shortest_distance(point1, point2, point3):
-        x = [point2.LAT, point3.LAT]
-        y = [point2.LON, point3.LON]
-        slope , intercept,_,_,_ = stats.linregress(x, y)
-        return shortest_distance(point1.LAT, point1.LON, slope, -1, intercept)
+def find_shortest_distance(p1, p2, p3):
+    x = np.array([p1.LAT, p1.LON])
+    y = np.array([p2.LAT, p2.LON])
+    z = np.array([p3.LAT, p3.LON])
+    return shortest_distance(x,y,z)
 
 def lap1_generator():
     for file_name in listdir('data/laps'):
         if not file_name.startswith('lap1'): continue
-        yield init_dataframe('data/laps/'+file_name)
+        yield (file_name, init_dataframe('data/laps/'+file_name))
 
 def lap2_generator():
     for file_name in listdir('data/laps'):
         if file_name.startswith('lap1'): continue
-        yield init_dataframe('data/laps/'+file_name)
+        yield (file_name, init_dataframe('data/laps/'+file_name))
         
 def find_out_difference_v2(lap, ref_lap):
     sum_of_distances = 0
+    distances = []
+
     for i in lap.index:
         point = lap.loc[i]
 
@@ -228,18 +234,40 @@ def find_out_difference_v2(lap, ref_lap):
             print("Negative value!!!\nIndices: {} {}\nAngles: {} {}".format(i, closest_index, angle1, angle2))
         else:
             min_dist = degrees2kilometers(min_dist) * 100000    # in centimeters
-            sum_of_distances += min_dist        
+            sum_of_distances += min_dist   
+            distances.append(min_dist)     
     
     print ("Sum is {}cm".format(sum_of_distances))
     print ("Average distance from reference lap is {}cm".format(sum_of_distances/len(lap)))
+    return distances
 
-    with open('average_perpendiculars.txt', 'a') as file:
-        file.write('{} cm\n'.format(sum_of_distances/len(lap)))
+differences_dict = {}
+max_len = 2500
 
-# for lap in lap1_generator():
-#     find_out_difference_v2(ref1, lap)
+find_dff = lambda x,y,z: z.extend(find_out_difference_v2(x,y))
 
-# for lap in lap2_generator():
-#     find_out_difference_v2(ref2, lap)
+for file_name, lap in lap2_generator():
+    diff1 = []
+    diff2 = []
+
+    th1 = thread.Thread(target=find_dff, args=(lap, ref2, diff1))
+    th2 = thread.Thread(target=find_dff, args=(ref2, lap, diff2))
+
+    th1.start()
+    th2.start()
+    th1.join() 
+    th2.join() 
+
+    m = map(lambda x: str(), range(max_len - len(diff2)))
+    diff2 += list(m)
+    
+    m = map(lambda x: str(), range(max_len - len(diff1)))
+    diff1 += list(m)
+
+    differences_dict[file_name] = diff1
+    differences_dict[file_name+' (from view of ref lap)'] = diff2
+
+diff_df = pd.DataFrame(differences_dict)
+diff_df.to_csv('data/detail_diff2.csv', index=False)
 
 ############################################################################################################################
