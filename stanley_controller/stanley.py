@@ -8,11 +8,21 @@ from matlab.engine import start_matlab
 from matlab import double
 import io 
 
-out = io.StringIO()
-err = io.StringIO()
-eng = start_matlab()
+class MatlabWrapper:
 
-def steering_command(refPose: list, currPose: list, velocity: float):
+    def __init__(self):    
+        self._out = io.StringIO()
+        self._err = io.StringIO()
+        self._eng = start_matlab()
+
+
+    def __del__(self):
+        self._eng.quit()
+        self._out.close()
+        self._err.close()
+
+
+    def steering_command(self, refPose: list, currPose: list, velocity: float):
     """
     Computes the steering angle command steerCmd, in degrees, using the  
     Stanley method.
@@ -29,21 +39,25 @@ def steering_command(refPose: list, currPose: list, velocity: float):
             Θ specifies the orientation angle of the vehicle at location (x,y) and is positive in the counterclockwise direction.
         velocity : float
             Current longitudinal velocity of the vehicle. Units are in meters per second.
+
+        Returns
+        ----------
+            A steering angle command in degrees.
     """
 
     refPose = double(refPose)
     currPose = double(currPose)
-    cmd = eng.lateralControllerStanley(refPose, currPose, velocity,\
-        stdout=out, stderr=err)
-    log()
+        cmd = self._eng.lateralControllerStanley(refPose, currPose, velocity,\
+            stdout=self._out, stderr=self._err)
+        self._log()
     return cmd
 
-def log():
-    output = out.getvalue()
+    def _log(self):
+        output = self._out.getvalue()
     if output != '':
         print(output)
 
-    error = err.getvalue()
+        error = self._err.getvalue()
     if error != '':
         print(error)
 
