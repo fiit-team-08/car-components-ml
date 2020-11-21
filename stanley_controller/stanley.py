@@ -6,6 +6,7 @@ https://ch.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-f
 
 from matlab.engine import start_matlab
 from matlab import double
+import math
 import io 
 
 class MatlabWrapper:
@@ -23,41 +24,69 @@ class MatlabWrapper:
 
 
     def steering_command(self, refPose: list, currPose: list, velocity: float):
-    """
-    Computes the steering angle command steerCmd, in degrees, using the  
-    Stanley method.
+        """
+        Computes the steering angle command steerCmd, in degrees, using the  
+        Stanley method.
 
-    Parameters
+        Parameters
         ----------
-        refPose : str
-            Reference pose, specified as an [x, y, Θ] vector. x and y are in meters, and Θ is in degrees.
-            x and y specify the reference point to steer the vehicle toward. 
-            Θ specifies the orientation angle of the path at this reference point and is positive in the counterclockwise direction.
-        currPose : str
-            Current pose of the vehicle, specified as an [x, y, Θ] vector. x and y are in meters, and Θ is in degrees.
-            x and y specify the location of the vehicle, which is defined as the center of the vehicle's rear axle.
-            Θ specifies the orientation angle of the vehicle at location (x,y) and is positive in the counterclockwise direction.
-        velocity : float
-            Current longitudinal velocity of the vehicle. Units are in meters per second.
+            refPose : str
+                Reference pose, specified as an [x, y, Θ] vector. x and y are in meters, and Θ is in degrees.
+                x and y specify the reference point to steer the vehicle toward. 
+                Θ specifies the orientation angle of the path at this reference point and is positive in the counterclockwise direction.
+            currPose : str
+                Current pose of the vehicle, specified as an [x, y, Θ] vector. x and y are in meters, and Θ is in degrees.
+                x and y specify the location of the vehicle, which is defined as the center of the vehicle's rear axle.
+                Θ specifies the orientation angle of the vehicle at location (x,y) and is positive in the counterclockwise direction.
+            velocity : float
+                Current longitudinal velocity of the vehicle. Units are in meters per second.
 
         Returns
         ----------
             A steering angle command in degrees.
-    """
+        """
 
-    refPose = double(refPose)
-    currPose = double(currPose)
+        refPose = double(refPose)
+        currPose = double(currPose)
         cmd = self._eng.lateralControllerStanley(refPose, currPose, velocity,\
             stdout=self._out, stderr=self._err)
         self._log()
-    return cmd
+        return cmd
 
+
+    def bicycleKinematicModel(self, steering_angle = math.pi/4):
+        """
+        Creates a bicycle vehicle model to simulate simplified car-like vehicle dynamics. 
+        This model represents a vehicle with two axles separated by a distance, WheelBase. 
+        The state of the vehicle is defined as a three-element vector, [x y theta], with a global xy-position, 
+        specified in meters, and a vehicle heading angle, theta, specified in radians. The front wheel can be turned with steering angle psi. 
+        The vehicle heading, theta, is defined at the center of the rear axle. 
+        To compute the time derivative states of the model, use the derivative function with input commands and the current robot state.
+
+        Parameters
+        ----------
+            steering_angle : float
+                The maximum steering angle, psi, refers to the maximum angle the vehicle can be steered to the right or left, specified in radians. 
+                A value of pi/2 provides the vehicle with a minimum turning radius of 0. 
+                This property is used to validate the user-provided state input.
+                Default value is PI/4 .
+
+        Returns
+        ----------
+            Kinematic model of a bicycle. 
+        """
+
+        bicycle = self._eng.bicycleKinematics("MaxSteeringAngle", steering_angle, stdout=self._out, stderr=self._err)
+        self._log()
+        return bicycle
+
+    
     def _log(self):
         output = self._out.getvalue()
-    if output != '':
-        print(output)
+        if output != '':
+            print(output)
 
         error = self._err.getvalue()
-    if error != '':
-        print(error)
+        if error != '':
+            print(error)
 
