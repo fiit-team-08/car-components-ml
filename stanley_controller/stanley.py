@@ -23,18 +23,18 @@ class MatlabWrapper:
         self._err.close()
 
 
-    def steering_command(self, refPose: list, currPose: list, velocity: float):
+    def steering_command(self, ref_pose: list, curr_pose: list, velocity: float):
         """
         Computes the steering angle command steerCmd, in degrees, using the  
         Stanley method.
 
         Parameters
         ----------
-            refPose : str
+            ref_pose : str
                 Reference pose, specified as an [x, y, Θ] vector. x and y are in meters, and Θ is in degrees.
                 x and y specify the reference point to steer the vehicle toward. 
                 Θ specifies the orientation angle of the path at this reference point and is positive in the counterclockwise direction.
-            currPose : str
+            curr_pose : str
                 Current pose of the vehicle, specified as an [x, y, Θ] vector. x and y are in meters, and Θ is in degrees.
                 x and y specify the location of the vehicle, which is defined as the center of the vehicle's rear axle.
                 Θ specifies the orientation angle of the vehicle at location (x,y) and is positive in the counterclockwise direction.
@@ -46,15 +46,15 @@ class MatlabWrapper:
             A steering angle command in degrees.
         """
 
-        refPose = double(refPose)
-        currPose = double(currPose)
-        cmd = self._eng.lateralControllerStanley(refPose, currPose, velocity,\
+        ref_pose = double(ref_pose)
+        curr_pose = double(curr_pose)
+        cmd = self._eng.lateralControllerStanley(ref_pose, curr_pose, velocity,\
             stdout=self._out, stderr=self._err)
         self._log()
         return cmd
 
 
-    def bicycleKinematicModel(self, steering_angle = math.pi/4):
+    def bicycle_kinematic_model(self, steering_angle = math.pi/4):
         """
         Creates a bicycle vehicle model to simulate simplified car-like vehicle dynamics. 
         This model represents a vehicle with two axles separated by a distance, WheelBase. 
