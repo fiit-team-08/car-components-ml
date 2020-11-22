@@ -48,7 +48,7 @@ class MatlabWrapper:
 
         ref_pose = double(ref_pose)
         curr_pose = double(curr_pose)
-        cmd = self._eng.lateralControllerStanley(ref_pose, curr_pose, velocity,\
+        cmd = self._eng.lateralControllerStanley(ref_pose, curr_pose, velocity,
             stdout=self._out, stderr=self._err)
         self._log()
         return cmd
