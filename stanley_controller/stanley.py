@@ -136,6 +136,8 @@ class MatlabWrapper:
                        stdout=self._out,
                        stderr=self._err
         )
+
+        self._log()
         new_state = self._eng.workspace['y'][-1]
 
         return new_state
