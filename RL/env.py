@@ -9,6 +9,48 @@ from stanley_controller.stanley import MatlabWrapper
 
 
 class CarEnv(gym.Env):
+    """
+    Environment class containing all the methods necessary for reinforcement
+    learning.
+
+    Attributes
+    ----------
+        df : pd.DataFrame
+            DataFrame containing info about the ref. trace.
+        road : geom.LineString
+            Geometric multiline representing the ref. trace.
+        observation_space : np.array
+            Describes the set of all possible states by min and max values for
+            each element of the attribute state. State/Observation consists of
+            5 elements:
+                x: x coord in meters
+                y: y coord in meters
+                theta: vehicle heading angle in radians
+                v: velocity in m/s
+                psi: steering angle in radians
+        action_space : np.array
+            Describes the set of all possible actions by min and max values
+            for each element of the action array. Action consists of
+            2 elements: velocity and psi.
+        init_x : float
+            Initial x position for reset.
+        init_y : float
+            Initial y position for reset.
+        init_theta : float
+            Initial vehicle heading angle for reset (radians).
+        init_v : float
+            Initial velocity of the vehicle for reset (m/s).
+        init_psi : float
+            Initial steering command of the vehicle given in radians.
+        init_observation : np.array
+            Initial observation used to reset the environment. It's described
+            by array [x, y, theta, v, psi].
+        state : np.array
+            Current state of the car given by array [x, y, theta, v, psi].
+        matlab : MatlabWrapper()
+            Matlab engine instance for calling Matlab functions.
+    """
+
     metadata = {'render.modes': ['human']}
 
     def __init__(self, filename='../data/ref1_v2.csv', type='continuous',
@@ -22,22 +64,17 @@ class CarEnv(gym.Env):
         self.df = self._read_df(filename)
         self.road = self._create_road()
 
-        # x: x coord in meters
-        # y: y coord in meters
-        # theta: vehicle heading angle in radians
-        # v: velocity in m/s
-        # psi: steering angle in radians
         # 130 km/h ~= 36 m/s
         self.observation_space = spaces.Box(
             low=np.array([-np.inf, -np.inf, -np.pi, 0., -(np.pi/4)]),
             high=np.array([np.inf, np.inf, np.pi, 36., np.pi/4])
         )
 
-        # steering cmd a.k.a. psi
-        # let's keep the speed constant as 2 m/s so that the action space is 1D
+        # steering cmd a.k.a. psi and velocity
+        # TODO: choose proper change speed limit per 0.1s
         self.action_space = spaces.Box(
-            low=np.array([-(np.pi/4)]),
-            high=np.array([np.pi/4])
+            low=np.array([-(np.pi/4), -0.14]),
+            high=np.array([np.pi/4, 0.14])
         )
 
         self.viewer = None
@@ -73,6 +110,30 @@ class CarEnv(gym.Env):
         return road
 
     def step(self, action):
+        """
+        Applies the action given as parameter and calculates the new state
+        (observation).
+
+        Parameters
+        ----------
+            action : np.array
+                Action that should be performed.
+                Consists of [delta_psi, delta_v], where
+                delta_psi is change of the steering command in radians and
+                delta_v is change of velocity in m/s.
+
+        Returns
+        ----------
+            observation : np.array
+                New state of the car.
+            reward : float
+                Reward for the performed action.
+            done : bool
+                True when the car moves further than 0.5m away from
+                the ref. trace, otherwise false.
+            info : dict
+                Information about previous state, current state and reward.
+        """
         # action = delta_psi in radians (delta of the steering command)
         # action = steering command a.k.a. angle psi in radians
 
@@ -87,7 +148,7 @@ class CarEnv(gym.Env):
         x = self.state[0]
         y = self.state[1]
         theta = self.state[2]
-        v = self.state[3]
+        v = self.state[3] + action[1]
         psi = self.state[4] + action[0]
 
         new_coords = self.matlab.bicycle_kinematic_model(x, y, theta, v, psi)
@@ -119,14 +180,24 @@ class CarEnv(gym.Env):
         return observation, reward, done, info
 
     def reset(self):
+        """
+        Resets the state of the car to the initial state.
+        """
         self.state = self.init_observation
 
         return self.init_observation
 
     def render(self, mode='human'):
+        """
+        Renders an animation to visualize the state of the car.
+        """
         pass
 
     def close(self):
+        """
+        Closes the viewer window.
+        """
+
         if self.viewer is not None:
             self.viewer.close()
             self.viewer = None
@@ -140,7 +211,7 @@ if __name__ == '__main__':
         for t in range(10000):
             # env.render()
             # with each action just turn the wheel +0.05 rad
-            action = np.array([0.05])
+            action = np.array([0.05, 1.0])
             observation, reward, done, info = env.step(action)
             print(info)
             if done:
