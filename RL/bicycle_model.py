@@ -3,8 +3,7 @@ from math import cos, sin, tan
 
 class BicycleKinematicModel:
 
-    # 1.5
-    def __init__(self, x, y, steering_angle, heading_angle, bicycle_len=1.0):
+    def __init__(self, x, y, steering_angle, heading_angle, bicycle_len=1.5):
         self._x = x                                 # meters
         self._y = y                                 # meters
         self._steering_angle = steering_angle       # radians
