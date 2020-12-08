@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 from obspy.geodetics import degrees2kilometers
-from stanley_controller.stanley import MatlabWrapper
+from RL.bicycle_model import BicycleKinematicModel
 
 
 class CarEnv(gym.Env):
@@ -45,10 +45,11 @@ class CarEnv(gym.Env):
         init_observation : np.array
             Initial observation used to reset the environment. It's described
             by array [x, y, theta, v, psi].
-        state : np.array
+        state : np.array or None
             Current state of the car given by array [x, y, theta, v, psi].
-        matlab : MatlabWrapper()
-            Matlab engine instance for calling Matlab functions.
+        bicycle : BicycleKinematicModel or None
+            Instance of BicycleKinematicModel for calculations of the new
+            states.
     """
 
     metadata = {'render.modes': ['human']}
@@ -71,7 +72,7 @@ class CarEnv(gym.Env):
         )
 
         # steering cmd a.k.a. psi and velocity
-        # TODO: choose proper change speed limit per 0.1s
+        # delta speed limit per 0.1s - 10km/h in 2s
         self.action_space = spaces.Box(
             low=np.array([-(np.pi/4), -0.14]),
             high=np.array([np.pi/4, 0.14])
@@ -87,7 +88,7 @@ class CarEnv(gym.Env):
                                           self.init_theta, self.init_v,
                                           self.init_psi])
         self.state = None
-        self.matlab = MatlabWrapper()
+        self.bicycle = None
 
     @staticmethod
     def _read_df(filename: str) -> pd.DataFrame:
@@ -145,14 +146,12 @@ class CarEnv(gym.Env):
                                   'psi': self.state[4]},
                 'action': action}
 
-        x = self.state[0]
-        y = self.state[1]
-        theta = self.state[2]
         v = self.state[3] + action[1]
-        psi = self.state[4] + action[0]
+        delta_psi = action[0]
 
-        new_coords = self.matlab.bicycle_kinematic_model(x, y, theta, v, psi)
-        new_point = geom.Point(new_coords[0], new_coords[1])
+        self.bicycle.change_state(velocity=v, steering_rate=delta_psi)
+        new_x, new_y, new_psi, new_theta = self.bicycle.get_state()
+        new_point = geom.Point(new_x, new_y)
         distance = self.road.distance(new_point)
 
         if distance > 0.5:
@@ -161,10 +160,7 @@ class CarEnv(gym.Env):
         else:
             reward = (0.5 - distance) * 10.0
 
-        new_x = new_coords[0]
-        new_y = new_coords[1]
-        new_theta = new_coords[2]
-        self.state = [new_x, new_y, new_theta, v, psi]
+        self.state = [new_x, new_y, new_theta, v, new_psi]
 
         info['distance'] = distance
         info['reward'] = reward
@@ -184,6 +180,11 @@ class CarEnv(gym.Env):
         Resets the state of the car to the initial state.
         """
         self.state = self.init_observation
+        self.bicycle = BicycleKinematicModel(x=self.state[0],
+                                             y=self.state[1],
+                                             heading_angle=self.state[2],
+                                             steering_angle=self.state[4]
+                                             )
 
         return self.init_observation
 
@@ -211,7 +212,7 @@ if __name__ == '__main__':
         for t in range(10000):
             # env.render()
             # with each action just turn the wheel +0.05 rad
-            action = np.array([0.05, 1.0])
+            action = np.array([0.05, 0.0])
             observation, reward, done, info = env.step(action)
             print(info)
             if done:
